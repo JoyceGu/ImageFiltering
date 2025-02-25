@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网页图片编辑器</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>网页图片编辑器</h1>
+        </header>
+        
+        <!-- 上方区域：主编辑区 -->
+        <section class="main-editor">
+            <!-- 左侧：图片上传和预览区域 -->
+            <div class="upload-section">
+                <div class="upload-container" id="uploadContainer">
+                    <div class="upload-area" id="uploadArea">
+                        <input type="file" id="imageUpload" accept="image/*" hidden>
+                        <img id="previewImage" src="" alt="预览" hidden>
+                        <div class="upload-placeholder" id="uploadPlaceholder">
+                            <img src="./img/upload-icon.svg" alt="上传图标" class="upload-icon">
+                            <p>点击或拖拽图片到此处上传</p>
+                            <button id="uploadButton">选择图片</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 中间：编辑控制面板 -->
+            <div class="controls-section">
+                <h2>图像调整</h2>
+                <div class="controls-container">
+                    <div class="control-group">
+                        <label for="dynamicRange">动态范围</label>
+                        <input type="range" id="dynamicRange" min="0" max="100" value="0" class="slider">
+                        <span class="value-display">0</span>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="highlights">高光</label>
+                        <input type="range" id="highlights" min="-100" max="100" value="0" class="slider">
+                        <span class="value-display">0</span>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="shadows">阴影</label>
+                        <input type="range" id="shadows" min="-100" max="100" value="0" class="slider">
+                        <span class="value-display">0</span>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="vibrance">色彩</label>
+                        <input type="range" id="vibrance" min="-100" max="100" value="0" class="slider">
+                        <span class="value-display">0</span>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="sharpness">锐度</label>
+                        <input type="range" id="sharpness" min="0" max="100" value="0" class="slider">
+                        <span class="value-display">0</span>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="grain">颗粒效果</label>
+                        <input type="range" id="grain" min="0" max="100" value="0" class="slider">
+                        <span class="value-display">0</span>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="colorEffect">色彩效果</label>
+                        <input type="range" id="colorEffect" min="0" max="100" value="0" class="slider">
+                        <span class="value-display">0</span>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="blueEffect">蓝色效果</label>
+                        <input type="range" id="blueEffect" min="-100" max="100" value="0" class="slider">
+                        <span class="value-display">0</span>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="whiteBalance">白平衡</label>
+                        <input type="range" id="whiteBalance" min="-100" max="100" value="0" class="slider">
+                        <span class="value-display">0</span>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="noiseReduction">高ISO降噪</label>
+                        <input type="range" id="noiseReduction" min="0" max="100" value="0" class="slider">
+                        <span class="value-display">0</span>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button id="resetButton">重置</button>
+                    <button id="confirmButton" class="primary-button">确定</button>
+                </div>
+            </div>
+            
+            <!-- 右侧：编辑后预览 -->
+            <div class="preview-section">
+                <h2>处理后预览</h2>
+                <div class="preview-container">
+                    <img id="finalPreviewImage" src="" alt="最终预览">
+                    <div class="preview-placeholder" id="previewPlaceholder">
+                        <p>编辑效果将在此处预览</p>
+                    </div>
+                </div>
+                <div class="download-button">
+                    <button id="downloadButton" class="primary-button">下载图片</button>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 下方区域：批量处理 -->
+        <section class="batch-editor">
+            <h2>批量处理图片</h2>
+            <p class="batch-description">上传最多8张图片，一键应用上方设置的编辑参数</p>
+            
+            <div class="batch-upload-area">
+                <input type="file" id="batchImageUpload" accept="image/*" multiple hidden>
+                <button id="batchUploadButton" class="secondary-button">选择多张图片</button>
+                <span class="upload-count" id="uploadCount">已选0张图片</span>
+            </div>
+            
+            <div class="batch-images-container" id="batchImagesContainer">
+                <!-- 批量图片预览将在这里显示 -->
+            </div>
+            
+            <div class="batch-actions">
+                <button id="applyAllButton" class="primary-button">应用编辑到所有图片</button>
+                <button id="downloadAllButton" class="secondary-button">下载所有图片</button>
+            </div>
+        </section>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html> 
