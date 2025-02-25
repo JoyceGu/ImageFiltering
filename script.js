@@ -54,7 +54,13 @@ let cropStartHeight = 0;
 
 // 模板相关变量
 let templates = [];
-const API_ENDPOINT = 'http://localhost:3001/api/templates';
+
+// 检测是否在 GitHub Pages 环境
+const isGitHubPages = window.location.hostname.includes('github.io');
+
+// 根据环境选择存储方式
+const API_ENDPOINT = isGitHubPages ? 'local-storage' : 'http://localhost:3001/api/templates';
+
 const MAX_TEMPLATES = 15;
 
 // 获取模板相关DOM元素
@@ -1225,14 +1231,20 @@ async function loadTemplates() {
     templatesContainer.appendChild(loadingTemplates);
     
     try {
-        console.log('正在请求API:', API_ENDPOINT);
-        const response = await fetch(API_ENDPOINT);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        let data;
+        if (API_ENDPOINT === 'local-storage') {
+            data = await loadTemplatesFromLocalStorage();
+        } else {
+            console.log('正在请求API:', API_ENDPOINT);
+            const response = await fetch(API_ENDPOINT);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            data = await response.json();
         }
         
-        const data = await response.json();
         console.log('成功获取模板数据:', data.length, '个模板');
         console.log('第一个模板名称格式:', typeof data[0].name, data[0].name);
         templates = data;
@@ -1249,6 +1261,12 @@ async function loadTemplates() {
 // 保存模板到服务器
 async function saveTemplateToServer(template) {
     try {
+        if (API_ENDPOINT === 'local-storage') {
+            await saveTemplateToLocalStorage(template);
+            await loadTemplates(); // 重新加载模板
+            return;
+        }
+        
         const response = await fetch(API_ENDPOINT, {
             method: 'POST',
             headers: {
@@ -1277,6 +1295,14 @@ async function saveTemplateToServer(template) {
 // 从服务器删除模板
 async function deleteTemplateFromServer(id) {
     try {
+        if (API_ENDPOINT === 'local-storage') {
+            await deleteTemplateFromLocalStorage(id);
+            // 更新本地模板列表
+            templates = templates.filter(t => t.id !== id);
+            renderTemplates();
+            return;
+        }
+        
         const response = await fetch(`${API_ENDPOINT}/${id}`, {
             method: 'DELETE'
         });
@@ -1405,4 +1431,87 @@ function applyTemplate(template) {
     
     // 应用滤镜
     applyFilters();
+}
+
+// 从 localStorage 加载模板
+async function loadTemplatesFromLocalStorage() {
+    // 如果首次使用，初始化预设模板
+    if (!localStorage.getItem('templates')) {
+        // 预设的富士模板数据
+        const defaultTemplates = [
+            {
+                id: 'fuji-provia',
+                name: {
+                    zh: '富士 Provia 标准',
+                    en: 'Fuji Provia Standard'
+                },
+                preset: true,
+                params: {
+                    dynamicRange: 30,
+                    highlights: -15,
+                    shadows: 20,
+                    vibrance: 25,
+                    sharpness: 20,
+                    grain: 10,
+                    colorEffect: 10,
+                    blueEffect: -5,
+                    whiteBalance: -8,
+                    noiseReduction: 15
+                }
+            },
+            // 此处添加其他预设...
+            {
+                id: 'fuji-velvia',
+                name: {
+                    zh: '富士 Velvia 鲜艳',
+                    en: 'Fuji Velvia Vivid'
+                },
+                preset: true,
+                params: {
+                    dynamicRange: 40,
+                    highlights: -10,
+                    shadows: 15,
+                    vibrance: 65,
+                    sharpness: 25,
+                    grain: 15,
+                    colorEffect: 30,
+                    blueEffect: 10,
+                    whiteBalance: -5,
+                    noiseReduction: 10
+                }
+            },
+            // 其他预设可以从server.js中复制...
+        ];
+        
+        localStorage.setItem('templates', JSON.stringify(defaultTemplates));
+    }
+    
+    return JSON.parse(localStorage.getItem('templates'));
+}
+
+// 保存模板到 localStorage
+async function saveTemplateToLocalStorage(template) {
+    let templates = JSON.parse(localStorage.getItem('templates') || '[]');
+    
+    // 添加ID和时间戳
+    template.id = 'user-' + Date.now();
+    template.preset = false;
+    template.createdAt = new Date().toISOString();
+    
+    // 检查是否超过限制
+    const userTemplates = templates.filter(t => !t.preset);
+    if (userTemplates.length >= MAX_TEMPLATES) {
+        throw new Error('模板数量已达上限');
+    }
+    
+    templates.push(template);
+    localStorage.setItem('templates', JSON.stringify(templates));
+    return template;
+}
+
+// 删除localStorage中的模板
+async function deleteTemplateFromLocalStorage(id) {
+    let templates = JSON.parse(localStorage.getItem('templates') || '[]');
+    templates = templates.filter(t => t.id !== id);
+    localStorage.setItem('templates', JSON.stringify(templates));
 } 
