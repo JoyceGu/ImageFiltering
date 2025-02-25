@@ -52,6 +52,129 @@ let cropStartY = 0;
 let cropStartWidth = 0;
 let cropStartHeight = 0;
 
+// 添加语言资源
+const translations = {
+    zh: {
+        title: "网页图片编辑器",
+        uploadTitle: "上传图像",
+        adjustTitle: "图像调整",
+        previewTitle: "处理后预览",
+        uploadPlaceholder: "点击或拖拽图片到此处上传",
+        selectImage: "选择图片",
+        cropButton: "裁剪",
+        confirmCrop: "确认裁剪",
+        cancel: "取消",
+        dynamicRange: "动态范围",
+        highlights: "高光",
+        shadows: "阴影",
+        vibrance: "色彩",
+        sharpness: "锐度",
+        grain: "颗粒效果",
+        colorEffect: "色彩效果",
+        blueEffect: "蓝色效果",
+        whiteBalance: "白平衡",
+        noiseReduction: "高ISO降噪",
+        reset: "重置",
+        confirm: "确定",
+        previewPlaceholder: "编辑效果将在此处预览",
+        downloadImage: "下载图片",
+        batchTitle: "批量处理图片",
+        batchDescription: "上传最多8张图片，一键应用上方设置的编辑参数",
+        selectMultiple: "选择多张图片",
+        uploadCount: "已选{count}张图片",
+        applyAll: "应用编辑到所有图片",
+        downloadAll: "下载所有图片",
+        dynamicRangeInfo: "调整图像的明暗对比度，增加可使照片更有立体感和层次感",
+        highlightsInfo: "调整图像明亮部分的亮度，减小可恢复过曝细节，增加会让亮部更亮",
+        shadowsInfo: "调整图像暗部的亮度，增加可以让暗部细节更清晰，减小会让暗部更深邃",
+        vibranceInfo: "调整图像的色彩鲜艳程度，增加会让颜色更加生动饱满，减小则更柔和自然",
+        sharpnessInfo: "增强图像的边缘清晰度，增加让图像更加清晰锐利，过高可能产生噪点",
+        grainInfo: "添加复古胶片般的颗粒感，增加会让图像更有胶片质感",
+        colorEffectInfo: "调整图像的色调倾向，增加会让照片更加温暖艳丽",
+        blueEffectInfo: "调整图像蓝色色调的强度，正值增加蓝色感，负值增加黄色感",
+        whiteBalanceInfo: "调整图像的冷暖色调平衡，正值更冷（偏蓝），负值更暖（偏黄）",
+        noiseReductionInfo: "减少图像中的颗粒噪点，使画面更加平滑，过高可能丢失细节"
+    },
+    en: {
+        title: "Web Image Editor",
+        uploadTitle: "Upload Image",
+        adjustTitle: "Image Adjustments",
+        previewTitle: "Processed Preview",
+        uploadPlaceholder: "Click or Drag Images Here",
+        selectImage: "Select Image",
+        cropButton: "Crop",
+        confirmCrop: "Confirm Crop",
+        cancel: "Cancel",
+        dynamicRange: "Dynamic Range",
+        highlights: "Highlights",
+        shadows: "Shadows",
+        vibrance: "Vibrance",
+        sharpness: "Sharpness",
+        grain: "Grain",
+        colorEffect: "Color Effect",
+        blueEffect: "Blue Effect",
+        whiteBalance: "White Balance",
+        noiseReduction: "Noise Reduction",
+        reset: "Reset",
+        confirm: "Confirm",
+        previewPlaceholder: "Edit Results Will Preview Here",
+        downloadImage: "Download Image",
+        batchTitle: "Batch Processing",
+        batchDescription: "Upload up to 8 images and apply edits with one click",
+        selectMultiple: "Select Multiple Images",
+        uploadCount: "{count} images selected",
+        applyAll: "Apply Edits to All",
+        downloadAll: "Download All",
+        dynamicRangeInfo: "Adjusts contrast between light and dark areas, increasing adds more depth and dimension",
+        highlightsInfo: "Controls brightness of lighter areas, decreasing recovers overexposed details",
+        shadowsInfo: "Controls brightness of darker areas, increasing reveals shadow details, decreasing deepens shadows",
+        vibranceInfo: "Adjusts color intensity, increasing makes colors more vivid, decreasing makes them more subtle",
+        sharpnessInfo: "Enhances edge clarity, making the image appear more detailed and crisp",
+        grainInfo: "Adds film-like grain texture to create a vintage or analog look",
+        colorEffectInfo: "Adjusts overall color tone, increasing makes the photo warmer and more vibrant",
+        blueEffectInfo: "Controls blue tones, positive values increase blue, negative values add yellow",
+        whiteBalanceInfo: "Adjusts color temperature, positive values make image cooler (blue), negative values make it warmer (yellow)",
+        noiseReductionInfo: "Reduces grainy noise in the image for a smoother look, too high might lose details"
+    }
+};
+
+// 当前语言
+let currentLang = 'zh';
+
+// 语言切换函数
+function switchLanguage() {
+    // 切换语言
+    currentLang = currentLang === 'zh' ? 'en' : 'zh';
+    
+    // 更新语言切换按钮文本
+    const langButton = document.getElementById('langSwitch');
+    langButton.textContent = currentLang === 'zh' ? 'EN' : '中文';
+    
+    // 更新页面标题
+    document.title = translations[currentLang].title;
+    
+    // 更新所有带data-lang属性的元素，包括提示信息
+    const elements = document.querySelectorAll('[data-lang]');
+    elements.forEach(el => {
+        const key = el.getAttribute('data-lang');
+        if (translations[currentLang][key]) {
+            el.textContent = translations[currentLang][key];
+        }
+    });
+    
+    // 更新所有控制组标签
+    const controlLabels = document.querySelectorAll('.control-group label');
+    controlLabels.forEach(label => {
+        const key = label.getAttribute('data-lang');
+        if (key && translations[currentLang][key]) {
+            label.textContent = translations[currentLang][key];
+        }
+    });
+    
+    // 更新上传计数
+    updateUploadCount(batchImages.length);
+}
+
 // 上传图片功能
 uploadButton.addEventListener('click', () => {
     imageUpload.click();
@@ -120,7 +243,7 @@ batchImageUpload.addEventListener('change', () => {
     });
     
     // 更新计数
-    uploadCount.textContent = `已选${files.length}张图片`;
+    updateUploadCount(files.length);
 });
 
 // 创建批量图片预览
@@ -148,7 +271,7 @@ function createBatchImagePreview(src, index) {
         });
         
         // 更新计数
-        uploadCount.textContent = `已选${batchImages.length}张图片`;
+        updateUploadCount(batchImages.length);
     });
     
     imageItem.appendChild(img);
@@ -193,7 +316,7 @@ function handleImageUpload() {
             
             // 显示清除按钮和裁剪按钮
             clearImageButton.hidden = false;
-            cropButton.hidden = false; // 显示裁剪按钮
+            cropButton.hidden = false; // 确保裁剪按钮显示
             
             // 加载图片到 canvas
             const img = new Image();
@@ -202,14 +325,16 @@ function handleImageUpload() {
                 canvas.width = img.width;
                 canvas.height = img.height;
                 
-                // 绘制原始图像
-                ctx.drawImage(img, 0, 0, img.width, img.height);
+                // 绘制图像
+                ctx.drawImage(img, 0, 0);
                 
                 // 保存原始图像数据
                 originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 
-                // 应用任何已经设置的滤镜
-                applyFilters();
+                // 预览处理后的图像
+                if (applyFilters()) {
+                    showPreviewImage();
+                }
             };
             img.src = e.target.result;
         };
@@ -601,6 +726,15 @@ window.addEventListener('DOMContentLoaded', () => {
     
     // 初始化裁剪功能
     initCropEvents();
+    
+    // 初始化可编辑数值
+    initEditableValues();
+    
+    // 在页面加载时初始化语言切换按钮事件
+    const langButton = document.getElementById('langSwitch');
+    if (langButton) {
+        langButton.addEventListener('click', switchLanguage);
+    }
 });
 
 // 添加清除图片功能
@@ -614,7 +748,7 @@ function clearUploadedImage() {
     
     // 隐藏清除按钮和裁剪按钮
     clearImageButton.hidden = true;
-    cropButton.hidden = true;
+    cropButton.hidden = true; // 确保裁剪按钮被隐藏
     
     // 重置 canvas 和原始图像数据
     originalImageData = null;
@@ -880,4 +1014,84 @@ function endCrop() {
     // 移除事件监听
     document.removeEventListener('mousemove', moveCropArea);
     document.removeEventListener('mouseup', stopCropAction);
+}
+
+// 添加双击编辑数字的功能
+function initEditableValues() {
+    const valueDisplays = document.querySelectorAll('.value-display');
+    
+    valueDisplays.forEach((display, index) => {
+        // 双击数字开始编辑
+        display.addEventListener('dblclick', function() {
+            const currentValue = parseInt(this.textContent);
+            const slider = document.querySelectorAll('.slider')[index];
+            
+            // 创建输入框
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.className = 'value-display-edit';
+            input.value = currentValue;
+            input.min = slider.min;
+            input.max = slider.max;
+            
+            // 替换显示为输入框
+            this.parentNode.replaceChild(input, this);
+            input.focus();
+            input.select();
+            
+            // 处理输入完成
+            function completeEdit() {
+                let newValue = parseInt(input.value);
+                
+                // 验证输入值是否在有效范围内
+                newValue = Math.max(parseInt(slider.min), Math.min(parseInt(slider.max), newValue));
+                
+                // 更新滑块值
+                slider.value = newValue;
+                
+                // 创建新的显示元素
+                const newDisplay = document.createElement('span');
+                newDisplay.className = 'value-display';
+                newDisplay.textContent = newValue;
+                
+                // 替换回显示元素
+                input.parentNode.replaceChild(newDisplay, input);
+                
+                // 重新初始化事件监听
+                initEditableValues();
+                
+                // 触发滑块的input事件以应用更改
+                const event = new Event('input', { bubbles: true });
+                slider.dispatchEvent(event);
+            }
+            
+            // 处理按键事件
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    completeEdit();
+                    e.preventDefault();
+                } else if (e.key === 'Escape') {
+                    // 取消编辑，恢复原值
+                    const newDisplay = document.createElement('span');
+                    newDisplay.className = 'value-display';
+                    newDisplay.textContent = currentValue;
+                    input.parentNode.replaceChild(newDisplay, input);
+                    initEditableValues();
+                    e.preventDefault();
+                }
+            });
+            
+            // 失去焦点时完成编辑
+            input.addEventListener('blur', completeEdit);
+        });
+    });
+}
+
+// 修改批量上传代码以支持语言切换
+function updateUploadCount(count) {
+    const uploadCount = document.getElementById('uploadCount');
+    if (uploadCount) {
+        const template = translations[currentLang].uploadCount;
+        uploadCount.textContent = template.replace('{count}', count);
+    }
 } 

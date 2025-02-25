@@ -9,24 +9,29 @@
 <body>
     <div class="container">
         <header>
-            <h1>网页图片编辑器</h1>
+            <div class="title-container">
+                <h1 data-lang="title">网页图片编辑器</h1>
+                <button id="langSwitch" class="lang-button">EN</button>
+            </div>
         </header>
         
         <!-- 上方区域：主编辑区 -->
         <section class="main-editor">
             <!-- 左侧：图片上传和预览区域 -->
             <div class="upload-section">
+                <h2 data-lang="uploadTitle">上传图像</h2>
                 <div class="upload-container" id="uploadContainer">
                     <div class="upload-area" id="uploadArea">
                         <input type="file" id="imageUpload" accept="image/*" hidden>
                         <img id="previewImage" src="" alt="预览" hidden>
                         <div class="upload-placeholder" id="uploadPlaceholder">
                             <img src="./img/upload-icon.svg" alt="上传图标" class="upload-icon">
-                            <p>点击或拖拽图片到此处上传</p>
-                            <button id="uploadButton">选择图片</button>
+                            <p data-lang="uploadPlaceholder">点击或拖拽图片到此处上传</p>
+                            <button id="uploadButton" data-lang="selectImage">选择图片</button>
+                            <p class="upload-hint">上传后可进行裁剪和编辑</p>
                         </div>
                         <button id="clearImageButton" class="clear-image-button" hidden>✕</button>
-                        <button id="cropButton" class="crop-button" hidden>裁剪</button>
+                        <button id="cropButton" class="crop-button" hidden data-lang="cropButton">裁剪</button>
                         
                         <div id="cropOverlay" class="crop-overlay">
                             <div id="cropArea" class="crop-area">
@@ -36,8 +41,8 @@
                                 <div class="crop-handle br"></div>
                             </div>
                             <div class="crop-actions">
-                                <button id="applyCrop" class="primary-button">确认裁剪</button>
-                                <button id="cancelCrop" class="secondary-button">取消</button>
+                                <button id="applyCrop" class="primary-button" data-lang="confirmCrop">确认裁剪</button>
+                                <button id="cancelCrop" class="secondary-button" data-lang="cancel">取消</button>
                             </div>
                         </div>
                     </div>
@@ -46,98 +51,148 @@
 
             <!-- 中间：编辑控制面板 -->
             <div class="controls-section">
-                <h2>图像调整</h2>
+                <h2 data-lang="adjustTitle">图像调整</h2>
                 <div class="controls-container">
                     <div class="control-group">
-                        <label for="dynamicRange">动态范围</label>
+                        <div class="label-container">
+                            <label for="dynamicRange" data-lang="dynamicRange">动态范围</label>
+                            <div class="info-icon">?
+                                <div class="tooltip" data-lang="dynamicRangeInfo">调整图像的明暗对比度，增加可使照片更有立体感和层次感</div>
+                            </div>
+                        </div>
                         <input type="range" id="dynamicRange" min="0" max="100" value="0" class="slider">
                         <span class="value-display">0</span>
                     </div>
                     
                     <div class="control-group">
-                        <label for="highlights">高光</label>
+                        <div class="label-container">
+                            <label for="highlights" data-lang="highlights">高光</label>
+                            <div class="info-icon">?
+                                <div class="tooltip" data-lang="highlightsInfo">调整图像明亮部分的亮度，减小可恢复过曝细节，增加会让亮部更亮</div>
+                            </div>
+                        </div>
                         <input type="range" id="highlights" min="-100" max="100" value="0" class="slider">
                         <span class="value-display">0</span>
                     </div>
                     
                     <div class="control-group">
-                        <label for="shadows">阴影</label>
+                        <div class="label-container">
+                            <label for="shadows" data-lang="shadows">阴影</label>
+                            <div class="info-icon">?
+                                <div class="tooltip" data-lang="shadowsInfo">调整图像暗部的亮度，增加可以让暗部细节更清晰，减小会让暗部更深邃</div>
+                            </div>
+                        </div>
                         <input type="range" id="shadows" min="-100" max="100" value="0" class="slider">
                         <span class="value-display">0</span>
                     </div>
                     
                     <div class="control-group">
-                        <label for="vibrance">色彩</label>
+                        <div class="label-container">
+                            <label for="vibrance" data-lang="vibrance">色彩</label>
+                            <div class="info-icon">?
+                                <div class="tooltip" data-lang="vibranceInfo">调整图像的色彩鲜艳程度，增加会让颜色更加生动饱满，减小则更柔和自然</div>
+                            </div>
+                        </div>
                         <input type="range" id="vibrance" min="-100" max="100" value="0" class="slider">
                         <span class="value-display">0</span>
                     </div>
                     
                     <div class="control-group">
-                        <label for="sharpness">锐度</label>
+                        <div class="label-container">
+                            <label for="sharpness" data-lang="sharpness">锐度</label>
+                            <div class="info-icon">?
+                                <div class="tooltip" data-lang="sharpnessInfo">增强图像的边缘清晰度，增加让图像更加清晰锐利，过高可能产生噪点</div>
+                            </div>
+                        </div>
                         <input type="range" id="sharpness" min="0" max="100" value="0" class="slider">
                         <span class="value-display">0</span>
                     </div>
                     
                     <div class="control-group">
-                        <label for="grain">颗粒效果</label>
+                        <div class="label-container">
+                            <label for="grain" data-lang="grain">颗粒效果</label>
+                            <div class="info-icon">?
+                                <div class="tooltip" data-lang="grainInfo">添加复古胶片般的颗粒感，增加会让图像更有胶片质感</div>
+                            </div>
+                        </div>
                         <input type="range" id="grain" min="0" max="100" value="0" class="slider">
                         <span class="value-display">0</span>
                     </div>
                     
                     <div class="control-group">
-                        <label for="colorEffect">色彩效果</label>
+                        <div class="label-container">
+                            <label for="colorEffect" data-lang="colorEffect">色彩效果</label>
+                            <div class="info-icon">?
+                                <div class="tooltip" data-lang="colorEffectInfo">调整图像的色调倾向，增加会让照片更加温暖艳丽</div>
+                            </div>
+                        </div>
                         <input type="range" id="colorEffect" min="0" max="100" value="0" class="slider">
                         <span class="value-display">0</span>
                     </div>
                     
                     <div class="control-group">
-                        <label for="blueEffect">蓝色效果</label>
+                        <div class="label-container">
+                            <label for="blueEffect" data-lang="blueEffect">蓝色效果</label>
+                            <div class="info-icon">?
+                                <div class="tooltip" data-lang="blueEffectInfo">调整图像蓝色色调的强度，正值增加蓝色感，负值增加黄色感</div>
+                            </div>
+                        </div>
                         <input type="range" id="blueEffect" min="-100" max="100" value="0" class="slider">
                         <span class="value-display">0</span>
                     </div>
                     
                     <div class="control-group">
-                        <label for="whiteBalance">白平衡</label>
+                        <div class="label-container">
+                            <label for="whiteBalance" data-lang="whiteBalance">白平衡</label>
+                            <div class="info-icon">?
+                                <div class="tooltip" data-lang="whiteBalanceInfo">调整图像的冷暖色调平衡，正值更冷（偏蓝），负值更暖（偏黄）</div>
+                            </div>
+                        </div>
                         <input type="range" id="whiteBalance" min="-100" max="100" value="0" class="slider">
                         <span class="value-display">0</span>
                     </div>
                     
                     <div class="control-group">
-                        <label for="noiseReduction">高ISO降噪</label>
+                        <div class="label-container">
+                            <label for="noiseReduction" data-lang="noiseReduction">高ISO降噪</label>
+                            <div class="info-icon">?
+                                <div class="tooltip" data-lang="noiseReductionInfo">减少图像中的颗粒噪点，使画面更加平滑，过高可能丢失细节</div>
+                            </div>
+                        </div>
                         <input type="range" id="noiseReduction" min="0" max="100" value="0" class="slider">
                         <span class="value-display">0</span>
                     </div>
                 </div>
                 
                 <div class="action-buttons">
-                    <button id="resetButton">重置</button>
-                    <button id="confirmButton" class="primary-button">确定</button>
+                    <button id="resetButton" data-lang="reset">重置</button>
+                    <button id="confirmButton" class="primary-button" data-lang="confirm">确定</button>
                 </div>
             </div>
             
             <!-- 右侧：编辑后预览 -->
             <div class="preview-section">
-                <h2>处理后预览</h2>
+                <h2 data-lang="previewTitle">处理后预览</h2>
                 <div class="preview-container">
                     <img id="finalPreviewImage" src="" alt="最终预览">
                     <div class="preview-placeholder" id="previewPlaceholder">
-                        <p>编辑效果将在此处预览</p>
+                        <p data-lang="previewPlaceholder">编辑效果将在此处预览</p>
                     </div>
                 </div>
                 <div class="download-button">
-                    <button id="downloadButton" class="primary-button">下载图片</button>
+                    <button id="downloadButton" class="primary-button" data-lang="downloadImage">下载图片</button>
                 </div>
             </div>
         </section>
         
         <!-- 下方区域：批量处理 -->
         <section class="batch-editor">
-            <h2>批量处理图片</h2>
-            <p class="batch-description">上传最多8张图片，一键应用上方设置的编辑参数</p>
+            <h2 data-lang="batchTitle">批量处理图片</h2>
+            <p class="batch-description" data-lang="batchDescription">上传最多8张图片，一键应用上方设置的编辑参数</p>
             
             <div class="batch-upload-area">
                 <input type="file" id="batchImageUpload" accept="image/*" multiple hidden>
-                <button id="batchUploadButton" class="secondary-button">选择多张图片</button>
+                <button id="batchUploadButton" class="secondary-button" data-lang="selectMultiple">选择多张图片</button>
                 <span class="upload-count" id="uploadCount">已选0张图片</span>
             </div>
             
@@ -146,8 +201,8 @@
             </div>
             
             <div class="batch-actions">
-                <button id="applyAllButton" class="primary-button">应用编辑到所有图片</button>
-                <button id="downloadAllButton" class="secondary-button">下载所有图片</button>
+                <button id="applyAllButton" class="primary-button" data-lang="applyAll">应用编辑到所有图片</button>
+                <button id="downloadAllButton" class="secondary-button" data-lang="downloadAll">下载所有图片</button>
             </div>
         </section>
     </div>
