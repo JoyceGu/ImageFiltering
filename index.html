@@ -179,8 +179,33 @@
                         <p data-lang="previewPlaceholder">编辑效果将在此处预览</p>
                     </div>
                 </div>
-                <div class="download-button">
+                <div class="preview-buttons">
+                    <button id="saveTemplateButton" class="secondary-button" data-lang="saveTemplate">保存参数模板</button>
                     <button id="downloadButton" class="primary-button" data-lang="downloadImage">下载图片</button>
+                </div>
+            </div>
+
+            <!-- 添加模板保存对话框 -->
+            <div id="saveTemplateDialog" class="modal">
+                <div class="modal-content">
+                    <h3 data-lang="saveTemplateTitle">保存参数模板</h3>
+                    <input type="text" id="templateName" placeholder="输入模板名称" data-lang-placeholder="templateNamePlaceholder">
+                    <div class="modal-buttons">
+                        <button id="cancelSaveTemplate" class="secondary-button" data-lang="cancel">取消</button>
+                        <button id="confirmSaveTemplate" class="primary-button" data-lang="save">保存</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧模板库区域 -->
+            <div class="templates-panel">
+                <h2 data-lang="templatesLibrary">参数模板库</h2>
+                <div class="templates-container" id="templatesContainer">
+                    <!-- 模板列表将在这里动态生成 -->
+                    <div class="loading-templates" id="loadingTemplates" data-lang="loadingTemplates">加载模板中...</div>
+                    <div class="empty-templates" id="emptyTemplates" style="display:none;" data-lang="noTemplates">
+                        尚无保存的模板
+                    </div>
                 </div>
             </div>
         </section>

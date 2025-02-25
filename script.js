@@ -52,6 +52,21 @@ let cropStartY = 0;
 let cropStartWidth = 0;
 let cropStartHeight = 0;
 
+// 模板相关变量
+let templates = [];
+const API_ENDPOINT = 'http://localhost:3001/api/templates';
+const MAX_TEMPLATES = 15;
+
+// 获取模板相关DOM元素
+const saveTemplateButton = document.getElementById('saveTemplateButton');
+const saveTemplateDialog = document.getElementById('saveTemplateDialog');
+const templateName = document.getElementById('templateName');
+const confirmSaveTemplate = document.getElementById('confirmSaveTemplate');
+const cancelSaveTemplate = document.getElementById('cancelSaveTemplate');
+const templatesContainer = document.getElementById('templatesContainer');
+const loadingTemplates = document.getElementById('loadingTemplates');
+const emptyTemplates = document.getElementById('emptyTemplates');
+
 // 添加语言资源
 const translations = {
     zh: {
@@ -93,7 +108,22 @@ const translations = {
         colorEffectInfo: "调整图像的色调倾向，增加会让照片更加温暖艳丽",
         blueEffectInfo: "调整图像蓝色色调的强度，正值增加蓝色感，负值增加黄色感",
         whiteBalanceInfo: "调整图像的冷暖色调平衡，正值更冷（偏蓝），负值更暖（偏黄）",
-        noiseReductionInfo: "减少图像中的颗粒噪点，使画面更加平滑，过高可能丢失细节"
+        noiseReductionInfo: "减少图像中的颗粒噪点，使画面更加平滑，过高可能丢失细节",
+        saveTemplate: "保存参数模板",
+        templatesLibrary: "参数模板库",
+        noTemplates: "尚无保存的模板",
+        loadingTemplates: "加载模板中...",
+        saveTemplateTitle: "保存参数模板",
+        templateNamePlaceholder: "输入模板名称",
+        save: "保存",
+        apply: "应用",
+        delete: "删除",
+        preset: "预设",
+        tooManyTemplates: "模板数量已达上限(15个)",
+        errorLoading: "加载模板失败",
+        errorSaving: "保存模板失败",
+        errorDeleting: "删除模板失败",
+        templateNameRequired: "请输入模板名称"
     },
     en: {
         title: "Web Image Editor",
@@ -134,7 +164,22 @@ const translations = {
         colorEffectInfo: "Adjusts overall color tone, increasing makes the photo warmer and more vibrant",
         blueEffectInfo: "Controls blue tones, positive values increase blue, negative values add yellow",
         whiteBalanceInfo: "Adjusts color temperature, positive values make image cooler (blue), negative values make it warmer (yellow)",
-        noiseReductionInfo: "Reduces grainy noise in the image for a smoother look, too high might lose details"
+        noiseReductionInfo: "Reduces grainy noise in the image for a smoother look, too high might lose details",
+        saveTemplate: "Save Template",
+        templatesLibrary: "Template Library",
+        noTemplates: "No saved templates",
+        loadingTemplates: "Loading templates...",
+        saveTemplateTitle: "Save Template",
+        templateNamePlaceholder: "Enter template name",
+        save: "Save",
+        apply: "Apply",
+        delete: "Delete",
+        preset: "Preset",
+        tooManyTemplates: "Maximum templates reached (15)",
+        errorLoading: "Failed to load templates",
+        errorSaving: "Failed to save template",
+        errorDeleting: "Failed to delete template",
+        templateNameRequired: "Please enter a template name"
     }
 };
 
@@ -143,17 +188,10 @@ let currentLang = 'zh';
 
 // 语言切换函数
 function switchLanguage() {
-    // 切换语言
     currentLang = currentLang === 'zh' ? 'en' : 'zh';
+    langSwitch.textContent = currentLang === 'zh' ? 'EN' : '中文';
     
-    // 更新语言切换按钮文本
-    const langButton = document.getElementById('langSwitch');
-    langButton.textContent = currentLang === 'zh' ? 'EN' : '中文';
-    
-    // 更新页面标题
-    document.title = translations[currentLang].title;
-    
-    // 更新所有带data-lang属性的元素，包括提示信息
+    // 更新页面上的所有文本标签
     const elements = document.querySelectorAll('[data-lang]');
     elements.forEach(el => {
         const key = el.getAttribute('data-lang');
@@ -162,17 +200,25 @@ function switchLanguage() {
         }
     });
     
-    // 更新所有控制组标签
-    const controlLabels = document.querySelectorAll('.control-group label');
-    controlLabels.forEach(label => {
-        const key = label.getAttribute('data-lang');
-        if (key && translations[currentLang][key]) {
-            label.textContent = translations[currentLang][key];
+    // 更新占位符文本
+    const placeholders = document.querySelectorAll('[data-lang-placeholder]');
+    placeholders.forEach(el => {
+        const key = el.getAttribute('data-lang-placeholder');
+        if (translations[currentLang][key]) {
+            el.placeholder = translations[currentLang][key];
         }
     });
     
-    // 更新上传计数
+    // 更新批量上传数量
     updateUploadCount(batchImages.length);
+    
+    // 强制重新加载模板列表，确保使用正确的语言
+    loadTemplates().then(() => {
+        console.log('已重新加载模板，当前语言:', currentLang);
+    });
+    
+    // 保存语言偏好
+    localStorage.setItem('language', currentLang);
 }
 
 // 上传图片功能
@@ -735,6 +781,27 @@ window.addEventListener('DOMContentLoaded', () => {
     if (langButton) {
         langButton.addEventListener('click', switchLanguage);
     }
+
+    // 加载模板
+    loadTemplates();
+
+    // 添加函数来测试 API 连接
+    function testApiConnection() {
+        console.log('测试 API 连接:', API_ENDPOINT);
+        fetch(API_ENDPOINT)
+            .then(response => {
+                if (response.ok) {
+                    console.log('API 连接成功!');
+                    return response.json();
+                }
+                throw new Error('API 响应错误: ' + response.status);
+            })
+            .then(data => console.log('获取到模板数量:', data.length))
+            .catch(error => console.error('API 连接测试失败:', error));
+    }
+
+    // 在页面加载时调用测试
+    testApiConnection();
 });
 
 // 添加清除图片功能
@@ -1094,4 +1161,248 @@ function updateUploadCount(count) {
         const template = translations[currentLang].uploadCount;
         uploadCount.textContent = template.replace('{count}', count);
     }
+}
+
+// 保存模板按钮点击事件
+saveTemplateButton.addEventListener('click', () => {
+    if (!originalImageData) {
+        alert(translations[currentLang].noImageUploaded || '请先上传并编辑图片！');
+        return;
+    }
+    
+    // 检查模板数量是否达到上限
+    const userTemplates = templates.filter(t => !t.preset);
+    if (userTemplates.length >= MAX_TEMPLATES) {
+        alert(translations[currentLang].tooManyTemplates);
+        return;
+    }
+    
+    // 显示保存模板对话框
+    saveTemplateDialog.style.display = 'block';
+    templateName.value = `模板 ${userTemplates.length + 1}`;
+    templateName.focus();
+    templateName.select();
+});
+
+// 确认保存模板
+confirmSaveTemplate.addEventListener('click', async () => {
+    if (!templateName.value.trim()) {
+        alert(translations[currentLang].templateNameRequired || '请输入模板名称');
+        return;
+    }
+    
+    // 构建新模板对象，对用户模板名称不做多语言处理
+    const newTemplate = {
+        name: templateName.value.trim(),
+        params: getCurrentParams()
+    };
+    
+    // 保存到服务器
+    await saveTemplateToServer(newTemplate);
+    
+    // 关闭对话框并清空输入框
+    saveTemplateDialog.style.display = 'none';
+    templateName.value = '';
+});
+
+// 取消保存模板
+cancelSaveTemplate.addEventListener('click', () => {
+    saveTemplateDialog.style.display = 'none';
+});
+
+// 点击模态对话框外部关闭
+window.addEventListener('click', (e) => {
+    if (e.target === saveTemplateDialog) {
+        saveTemplateDialog.style.display = 'none';
+    }
+});
+
+// 加载模板
+async function loadTemplates() {
+    loadingTemplates.style.display = 'block';
+    emptyTemplates.style.display = 'none';
+    templatesContainer.innerHTML = '';
+    templatesContainer.appendChild(loadingTemplates);
+    
+    try {
+        console.log('正在请求API:', API_ENDPOINT);
+        const response = await fetch(API_ENDPOINT);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('成功获取模板数据:', data.length, '个模板');
+        console.log('第一个模板名称格式:', typeof data[0].name, data[0].name);
+        templates = data;
+        
+        renderTemplates();
+        return data;
+    } catch (error) {
+        console.error('加载模板失败:', error);
+        loadingTemplates.textContent = translations[currentLang].errorLoading + ' - ' + error.message;
+        return [];
+    }
+}
+
+// 保存模板到服务器
+async function saveTemplateToServer(template) {
+    try {
+        const response = await fetch(API_ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(template)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const savedTemplate = await response.json();
+        
+        // 更新本地模板列表
+        const userTemplates = templates.filter(t => !t.preset);
+        templates = [...templates.filter(t => t.preset), ...userTemplates, savedTemplate];
+        
+        renderTemplates();
+    } catch (error) {
+        console.error('保存模板失败:', error);
+        alert(translations[currentLang].errorSaving);
+    }
+}
+
+// 从服务器删除模板
+async function deleteTemplateFromServer(id) {
+    try {
+        const response = await fetch(`${API_ENDPOINT}/${id}`, {
+            method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        // 更新本地模板列表
+        templates = templates.filter(t => t.id !== id);
+        
+        renderTemplates();
+    } catch (error) {
+        console.error('删除模板失败:', error);
+        alert(translations[currentLang].errorDeleting);
+    }
+}
+
+// 渲染模板列表
+function renderTemplates() {
+    // 移除加载提示
+    loadingTemplates.style.display = 'none';
+    
+    // 清空容器
+    templatesContainer.innerHTML = '';
+    
+    if (templates.length === 0) {
+        // 显示空状态
+        emptyTemplates.style.display = 'block';
+        templatesContainer.appendChild(emptyTemplates);
+        return;
+    }
+    
+    // 先显示预设模板，后显示用户模板
+    const presetTemplates = templates.filter(t => t.preset);
+    const userTemplates = templates.filter(t => !t.preset);
+    
+    // 创建模板项
+    [...presetTemplates, ...userTemplates].forEach(template => {
+        const item = document.createElement('div');
+        item.className = template.preset ? 'template-item preset' : 'template-item';
+        
+        const nameElem = document.createElement('div');
+        nameElem.className = 'template-name';
+        
+        // 调试输出
+        console.log(`渲染模板: ${template.id}, 名称类型: ${typeof template.name}`);
+        if (typeof template.name === 'object') {
+            console.log(`  语言选项: ${Object.keys(template.name).join(', ')}`);
+            console.log(`  当前语言: ${currentLang}, 显示: ${template.name[currentLang]}`);
+        }
+        
+        // 处理多语言模板名称
+        if (template.name && typeof template.name === 'object') {
+            // 预设模板使用当前语言的名称
+            nameElem.textContent = template.name[currentLang] || template.name.zh || template.name.en || '未命名';
+        } else {
+            // 用户模板或字符串名称
+            nameElem.textContent = template.name || '未命名';
+        }
+        
+        // 添加预设标记的代码保持不变
+        if (template.preset) {
+            const presetBadge = document.createElement('span');
+            presetBadge.className = 'preset-badge';
+            presetBadge.textContent = translations[currentLang].preset || '预设';
+            nameElem.appendChild(presetBadge);
+        }
+        
+        const actions = document.createElement('div');
+        actions.className = 'template-actions';
+        
+        // 应用按钮
+        const applyBtn = document.createElement('button');
+        applyBtn.className = 'template-apply';
+        applyBtn.textContent = translations[currentLang].apply || '应用';
+        applyBtn.addEventListener('click', () => applyTemplate(template));
+        
+        // 只为用户模板添加删除按钮
+        if (!template.preset) {
+            // 删除按钮
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'template-delete';
+            deleteBtn.textContent = translations[currentLang].delete || '删除';
+            deleteBtn.addEventListener('click', () => {
+                const confirmMessage = currentLang === 'zh' 
+                    ? `确定要删除模板 "${template.name[currentLang] || template.name}" 吗？`
+                    : `Are you sure you want to delete template "${template.name[currentLang] || template.name}"?`;
+                
+                if (confirm(confirmMessage)) {
+                    deleteTemplateFromServer(template.id);
+                }
+            });
+            
+            actions.appendChild(deleteBtn);
+        }
+        
+        // 添加应用按钮
+        actions.appendChild(applyBtn);
+        
+        item.appendChild(nameElem);
+        item.appendChild(actions);
+        
+        templatesContainer.appendChild(item);
+    });
+}
+
+// 应用模板
+function applyTemplate(template) {
+    if (!originalImageData) {
+        alert(translations[currentLang].noImageUploaded || '请先上传图片！');
+        return;
+    }
+    
+    // 应用参数
+    sliders.forEach(slider => {
+        if (template.params[slider.id] !== undefined) {
+            slider.value = template.params[slider.id];
+            // 更新显示值
+            const index = Array.from(sliders).indexOf(slider);
+            if (valueDisplays[index]) {
+                valueDisplays[index].textContent = slider.value;
+            }
+        }
+    });
+    
+    // 应用滤镜
+    applyFilters();
 } 

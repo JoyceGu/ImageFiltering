@@ -1,0 +1,14 @@
+{
+  "name": "image-editor-server",
+  "version": "1.0.0",
+  "description": "Simple template server for image editor",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "uuid": "^8.3.2"
+  }
+} 
