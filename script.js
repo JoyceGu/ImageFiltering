@@ -9,6 +9,7 @@ const confirmButton = document.getElementById('confirmButton');
 const finalPreviewImage = document.getElementById('finalPreviewImage');
 const previewPlaceholder = document.getElementById('previewPlaceholder');
 const downloadButton = document.getElementById('downloadButton');
+const clearImageButton = document.getElementById('clearImageButton');
 
 // 批量处理相关元素
 const batchImageUpload = document.getElementById('batchImageUpload');
@@ -30,6 +31,26 @@ let originalImageData = null;
 // 存储批量处理的图片
 let batchImages = [];
 let currentFilterSettings = {};
+
+// 获取裁剪相关元素
+const cropButton = document.getElementById('cropButton');
+const cropOverlay = document.getElementById('cropOverlay');
+const cropArea = document.getElementById('cropArea');
+const applyCrop = document.getElementById('applyCrop');
+const cancelCrop = document.getElementById('cancelCrop');
+const cropHandles = document.querySelectorAll('.crop-handle');
+
+// 裁剪相关变量
+let isCropping = false;
+let isDragging = false;
+let isResizing = false;
+let currentHandle = null;
+let startX = 0;
+let startY = 0;
+let cropStartX = 0;
+let cropStartY = 0;
+let cropStartWidth = 0;
+let cropStartHeight = 0;
 
 // 上传图片功能
 uploadButton.addEventListener('click', () => {
@@ -158,42 +179,43 @@ uploadArea.addEventListener('drop', (e) => {
 // 处理图片上传
 function handleImageUpload() {
     const file = imageUpload.files[0];
-    if (!file) return;
     
-    // 检查是否为图片
-    if (!file.type.match('image.*')) {
-        alert('请上传图片文件！');
-        return;
-    }
-    
-    const reader = new FileReader();
-    
-    reader.onload = function(e) {
-        // 显示预览图片
-        previewImage.src = e.target.result;
-        previewImage.hidden = false;
-        uploadPlaceholder.hidden = true;
+    if (file && file.type.match('image.*')) {
+        const reader = new FileReader();
         
-        // 加载图片到canvas
-        const img = new Image();
-        img.onload = function() {
-            // 设置canvas尺寸
-            canvas.width = img.width;
-            canvas.height = img.height;
+        reader.onload = function(e) {
+            // 隐藏上传占位符，显示预览图
+            uploadPlaceholder.hidden = true;
+            previewImage.hidden = false;
             
-            // 绘制原始图像
-            ctx.drawImage(img, 0, 0, img.width, img.height);
+            // 设置预览图片
+            previewImage.src = e.target.result;
             
-            // 保存原始图像数据
-            originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            // 显示清除按钮和裁剪按钮
+            clearImageButton.hidden = false;
+            cropButton.hidden = false; // 显示裁剪按钮
             
-            // 重置所有滑块
-            resetSliders();
+            // 加载图片到 canvas
+            const img = new Image();
+            img.onload = function() {
+                // 设置 canvas 尺寸
+                canvas.width = img.width;
+                canvas.height = img.height;
+                
+                // 绘制原始图像
+                ctx.drawImage(img, 0, 0, img.width, img.height);
+                
+                // 保存原始图像数据
+                originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                
+                // 应用任何已经设置的滤镜
+                applyFilters();
+            };
+            img.src = e.target.result;
         };
-        img.src = e.target.result;
-    };
-    
-    reader.readAsDataURL(file);
+        
+        reader.readAsDataURL(file);
+    }
 }
 
 // 设置滑块和值显示的事件监听
@@ -571,4 +593,291 @@ window.addEventListener('DOMContentLoaded', () => {
     console.log('批量图片容器:', !!batchImagesContainer);
     console.log('确认按钮:', !!confirmButton);
     console.log('下载按钮:', !!downloadButton);
-}); 
+    
+    // 添加清除按钮事件
+    if (clearImageButton) {
+        clearImageButton.addEventListener('click', clearUploadedImage);
+    }
+    
+    // 初始化裁剪功能
+    initCropEvents();
+});
+
+// 添加清除图片功能
+function clearUploadedImage() {
+    // 隐藏预览图片
+    previewImage.hidden = true;
+    previewImage.src = '';
+    
+    // 显示上传占位符
+    uploadPlaceholder.hidden = false;
+    
+    // 隐藏清除按钮和裁剪按钮
+    clearImageButton.hidden = true;
+    cropButton.hidden = true;
+    
+    // 重置 canvas 和原始图像数据
+    originalImageData = null;
+    
+    // 清除右侧预览区
+    if (finalPreviewImage) {
+        finalPreviewImage.style.display = 'none';
+    }
+    if (previewPlaceholder) {
+        previewPlaceholder.style.display = 'block';
+    }
+    
+    // 重置文件输入
+    imageUpload.value = '';
+    
+    // 确保裁剪模式关闭
+    endCrop();
+}
+
+// 为裁剪功能添加事件监听
+function initCropEvents() {
+    // 开始裁剪
+    cropButton.addEventListener('click', startCrop);
+    
+    // 确认裁剪
+    applyCrop.addEventListener('click', applyCropAction);
+    
+    // 取消裁剪
+    cancelCrop.addEventListener('click', cancelCropAction);
+    
+    // 移动裁剪区域
+    cropArea.addEventListener('mousedown', startDragCropArea);
+    
+    // 调整裁剪区域大小
+    cropHandles.forEach(handle => {
+        handle.addEventListener('mousedown', (e) => startResizeCropArea(e, handle));
+    });
+}
+
+// 开始裁剪
+function startCrop() {
+    isCropping = true;
+    cropOverlay.style.display = 'block';
+    
+    // 根据图片尺寸初始化裁剪区域
+    const imgRect = previewImage.getBoundingClientRect();
+    const uploadAreaRect = uploadArea.getBoundingClientRect();
+    
+    // 设置裁剪区域初始大小为图片尺寸的80%
+    const cropWidth = imgRect.width * 0.8;
+    const cropHeight = imgRect.height * 0.8;
+    
+    // 居中裁剪框
+    const cropLeft = (imgRect.width - cropWidth) / 2;
+    const cropTop = (imgRect.height - cropHeight) / 2;
+    
+    // 设置裁剪区域样式
+    cropArea.style.width = `${cropWidth}px`;
+    cropArea.style.height = `${cropHeight}px`;
+    cropArea.style.left = `${cropLeft}px`;
+    cropArea.style.top = `${cropTop}px`;
+    
+    // 添加拖动和调整大小事件
+    document.addEventListener('mousemove', moveCropArea);
+    document.addEventListener('mouseup', stopCropAction);
+}
+
+// 开始拖动裁剪区域
+function startDragCropArea(e) {
+    if (!isCropping) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    isDragging = true;
+    isResizing = false;
+    
+    startX = e.clientX;
+    startY = e.clientY;
+    cropStartX = parseInt(cropArea.style.left || 0);
+    cropStartY = parseInt(cropArea.style.top || 0);
+}
+
+// 开始调整裁剪区域大小
+function startResizeCropArea(e, handle) {
+    if (!isCropping) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    isResizing = true;
+    isDragging = false;
+    currentHandle = handle;
+    
+    startX = e.clientX;
+    startY = e.clientY;
+    cropStartX = parseInt(cropArea.style.left || 0);
+    cropStartY = parseInt(cropArea.style.top || 0);
+    cropStartWidth = parseInt(cropArea.style.width);
+    cropStartHeight = parseInt(cropArea.style.height);
+}
+
+// 移动裁剪区域
+function moveCropArea(e) {
+    if (!isCropping) return;
+    
+    e.preventDefault();
+    
+    if (isDragging) {
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        
+        // 计算新位置
+        let newLeft = cropStartX + dx;
+        let newTop = cropStartY + dy;
+        
+        // 限制在图片范围内
+        const imgRect = previewImage.getBoundingClientRect();
+        const cropWidth = parseInt(cropArea.style.width);
+        const cropHeight = parseInt(cropArea.style.height);
+        
+        newLeft = Math.max(0, Math.min(imgRect.width - cropWidth, newLeft));
+        newTop = Math.max(0, Math.min(imgRect.height - cropHeight, newTop));
+        
+        // 应用新位置
+        cropArea.style.left = `${newLeft}px`;
+        cropArea.style.top = `${newTop}px`;
+    } else if (isResizing && currentHandle) {
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        
+        // 根据当前操作的手柄调整大小和位置
+        if (currentHandle.classList.contains('tl')) {
+            // 左上角
+            let newWidth = cropStartWidth - dx;
+            let newHeight = cropStartHeight - dy;
+            let newLeft = cropStartX + dx;
+            let newTop = cropStartY + dy;
+            
+            if (newWidth > 20 && newHeight > 20) {
+                cropArea.style.width = `${newWidth}px`;
+                cropArea.style.height = `${newHeight}px`;
+                cropArea.style.left = `${newLeft}px`;
+                cropArea.style.top = `${newTop}px`;
+            }
+        } else if (currentHandle.classList.contains('tr')) {
+            // 右上角
+            let newWidth = cropStartWidth + dx;
+            let newHeight = cropStartHeight - dy;
+            let newTop = cropStartY + dy;
+            
+            if (newWidth > 20 && newHeight > 20) {
+                cropArea.style.width = `${newWidth}px`;
+                cropArea.style.height = `${newHeight}px`;
+                cropArea.style.top = `${newTop}px`;
+            }
+        } else if (currentHandle.classList.contains('bl')) {
+            // 左下角
+            let newWidth = cropStartWidth - dx;
+            let newHeight = cropStartHeight + dy;
+            let newLeft = cropStartX + dx;
+            
+            if (newWidth > 20 && newHeight > 20) {
+                cropArea.style.width = `${newWidth}px`;
+                cropArea.style.height = `${newHeight}px`;
+                cropArea.style.left = `${newLeft}px`;
+            }
+        } else if (currentHandle.classList.contains('br')) {
+            // 右下角
+            let newWidth = cropStartWidth + dx;
+            let newHeight = cropStartHeight + dy;
+            
+            if (newWidth > 20 && newHeight > 20) {
+                cropArea.style.width = `${newWidth}px`;
+                cropArea.style.height = `${newHeight}px`;
+            }
+        }
+    }
+}
+
+// 停止裁剪操作
+function stopCropAction() {
+    isDragging = false;
+    isResizing = false;
+    currentHandle = null;
+}
+
+// 应用裁剪
+function applyCropAction() {
+    if (!isCropping) return;
+    
+    // 获取裁剪区域的位置和大小
+    const cropRect = cropArea.getBoundingClientRect();
+    const imgRect = previewImage.getBoundingClientRect();
+    
+    // 计算裁剪坐标相对于图像的比例
+    const scaleX = originalImageData.width / imgRect.width;
+    const scaleY = originalImageData.height / imgRect.height;
+    
+    // 计算要裁剪的区域在原始图像上的坐标和大小
+    const sourceX = (cropRect.left - imgRect.left) * scaleX;
+    const sourceY = (cropRect.top - imgRect.top) * scaleY;
+    const sourceWidth = cropRect.width * scaleX;
+    const sourceHeight = cropRect.height * scaleY;
+    
+    // 创建新的canvas来存储裁剪后的图像
+    const cropCanvas = document.createElement('canvas');
+    const cropCtx = cropCanvas.getContext('2d');
+    
+    // 设置canvas尺寸
+    cropCanvas.width = sourceWidth;
+    cropCanvas.height = sourceHeight;
+    
+    // 从原始图像数据中裁剪
+    const imageData = new ImageData(
+        new Uint8ClampedArray(originalImageData.data),
+        originalImageData.width,
+        originalImageData.height
+    );
+    
+    // 创建临时canvas来绘制原始图像
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCanvas.width = originalImageData.width;
+    tempCanvas.height = originalImageData.height;
+    tempCtx.putImageData(imageData, 0, 0);
+    
+    // 裁剪图像
+    cropCtx.drawImage(
+        tempCanvas,
+        sourceX, sourceY, sourceWidth, sourceHeight,
+        0, 0, sourceWidth, sourceHeight
+    );
+    
+    // 更新原始canvas尺寸和内容
+    canvas.width = sourceWidth;
+    canvas.height = sourceHeight;
+    ctx.drawImage(cropCanvas, 0, 0);
+    
+    // 更新原始图像数据
+    originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    
+    // 应用当前滤镜
+    applyFilters();
+    
+    // 更新预览图
+    previewImage.src = canvas.toDataURL('image/png');
+    
+    // 关闭裁剪界面
+    endCrop();
+}
+
+// 取消裁剪
+function cancelCropAction() {
+    endCrop();
+}
+
+// 结束裁剪模式
+function endCrop() {
+    isCropping = false;
+    cropOverlay.style.display = 'none';
+    
+    // 移除事件监听
+    document.removeEventListener('mousemove', moveCropArea);
+    document.removeEventListener('mouseup', stopCropAction);
+} 

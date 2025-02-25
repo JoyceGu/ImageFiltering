@@ -25,6 +25,21 @@
                             <p>点击或拖拽图片到此处上传</p>
                             <button id="uploadButton">选择图片</button>
                         </div>
+                        <button id="clearImageButton" class="clear-image-button" hidden>✕</button>
+                        <button id="cropButton" class="crop-button" hidden>裁剪</button>
+                        
+                        <div id="cropOverlay" class="crop-overlay">
+                            <div id="cropArea" class="crop-area">
+                                <div class="crop-handle tl"></div>
+                                <div class="crop-handle tr"></div>
+                                <div class="crop-handle bl"></div>
+                                <div class="crop-handle br"></div>
+                            </div>
+                            <div class="crop-actions">
+                                <button id="applyCrop" class="primary-button">确认裁剪</button>
+                                <button id="cancelCrop" class="secondary-button">取消</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
